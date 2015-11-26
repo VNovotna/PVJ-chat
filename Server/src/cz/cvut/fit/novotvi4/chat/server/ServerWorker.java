@@ -18,7 +18,7 @@ public class ServerWorker implements Runnable {
     private Socket socket;
     private boolean clientAlive;
     private BufferedReader input;
-    private PrintWriter output;
+    public PrintWriter output;
 
     public ServerWorker(Socket s) throws IOException {
         this.clientAlive = true;

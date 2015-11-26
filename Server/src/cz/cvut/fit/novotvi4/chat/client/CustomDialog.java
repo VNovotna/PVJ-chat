@@ -77,8 +77,7 @@ class CustomDialog extends JDialog implements ActionListener, PropertyChangeList
                  * we're going to change the JOptionPane's
                  * value property.
                  */
-                optionPane.setValue(new Integer(
-                        JOptionPane.CLOSED_OPTION));
+                //optionPane.setValue(JOptionPane.CLOSED_OPTION);
             }
         });
 
@@ -135,6 +134,7 @@ class CustomDialog extends JDialog implements ActionListener, PropertyChangeList
                 String ucText = typedText.toUpperCase();
                 if (magicWord.equals(ucText)) {
                     //we're done; clear and dismiss the dialog
+                    
                     clearAndHide();
                 } else {
                     //text was invalid

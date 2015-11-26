@@ -25,7 +25,7 @@ public class ClientUI extends javax.swing.JFrame {
     public ClientUI() throws IOException {
         initComponents();
         try {
-            clientInstance = new Client("localhost", 1128, chatWindow);
+            clientInstance = new Client(Settings.address, Settings.port, chatWindow);
             clientThread = new Thread(clientInstance);
         } catch (IOException ex) {
             Logger.getLogger(ClientUI.class.getName()).log(Level.SEVERE, "Cannot connect", ex);
@@ -35,7 +35,6 @@ public class ClientUI extends javax.swing.JFrame {
             public void windowClosing(WindowEvent winEvt) {
                 try {
                     clientInstance.stop();
-                    //clientThread.interrupt();
                 } catch (IOException ex) {
                     Logger.getLogger(ClientUI.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -136,15 +135,15 @@ public class ClientUI extends javax.swing.JFrame {
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 179, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 179, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jToolBar1, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jScrollPane2)
                     .addComponent(sendButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGap(0, 0, Short.MAX_VALUE))
+                .addGap(0, 0, 0))
         );
 
         jTabbedPane1.addTab("tab1", jPanel1);
@@ -157,17 +156,19 @@ public class ClientUI extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addGap(0, 26, Short.MAX_VALUE)
-                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 315, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addComponent(jTabbedPane1)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void sendButtonClicked(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sendButtonClicked
-        System.out.println("Send button clicked");
-        clientInstance.sendMessage(messageText.getText());
+        
+        String text = messageText.getText().trim();
+        if (!text.isEmpty()) {
+            System.out.println("Message forwarded from UI");
+            clientInstance.sendMessage(text + "\r\n\r\n");
+        }
         messageText.setText(null);
     }//GEN-LAST:event_sendButtonClicked
 
@@ -222,7 +223,4 @@ public class ClientUI extends javax.swing.JFrame {
     private javax.swing.JButton sendButton;
     // End of variables declaration//GEN-END:variables
 
-    void setLabel(String string) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 }

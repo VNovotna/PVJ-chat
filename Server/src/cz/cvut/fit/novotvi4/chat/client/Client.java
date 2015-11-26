@@ -45,7 +45,7 @@ public class Client implements Runnable {
                     }
                     System.out.println("Recieved: " + response);
                     if (!response.equals("") && chatWindow != null) {
-                        final String shit = response;
+                        final String shit = chatWindow.getText()+ "\n" + response;
                         SwingUtilities.invokeLater(() -> {
                             chatWindow.setText(shit);
                         });

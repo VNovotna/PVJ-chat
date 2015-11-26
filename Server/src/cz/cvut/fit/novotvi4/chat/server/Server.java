@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,6 +18,7 @@ public class Server implements Runnable {
 
     private static final int TIMEOUT = 500;
     private ServerSocket serverSocket;
+    private List<ServerWorker> workers;
 
     public Server() {
         try {
@@ -23,6 +26,14 @@ public class Server implements Runnable {
             serverSocket.setSoTimeout(TIMEOUT);
         } catch (IOException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, "Cannot create server socket", ex);
+        }
+        workers = new ArrayList<>();
+    }
+
+    public synchronized void broadcast(String msg) {
+        for (ServerWorker worker : workers) {
+            System.out.println("Broadcast");
+            worker.output.println(msg);
         }
     }
 
@@ -37,8 +48,11 @@ public class Server implements Runnable {
                     continue;
                 }
                 try {
-                    (new Thread(new ServerWorker(clientSocket))).start();
+                    ServerWorker worker = new ServerWorker(clientSocket);
+                    workers.add(worker);
+                    (new Thread(worker)).start();
                     Logger.getLogger(Server.class.getName()).log(Level.INFO, "Spawning worker");
+                    broadcast("New user joined");
                 } catch (IOException ex) {
                     Logger.getLogger(Server.class.getName()).log(Level.SEVERE, "Cannot spawn worker", ex);
                 }
