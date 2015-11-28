@@ -12,7 +12,6 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -21,9 +20,9 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.nio.charset.MalformedInputException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,19 +48,23 @@ public class Server extends Thread {
     private ServerSocketChannel ssc;
     private Selector selector;
     private CharsetDecoder decoder;
-    private ByteBuffer buffer;
+    private ByteBuffer writeBuffer;
+    private ByteBuffer readBuffer;
+    private Map<SocketChannel, String> clients;
 
     /**
      * @throws IOException
      */
     public void init() throws IOException {
-        ssc = ServerSocketChannel.open(); //otevřít serverový kanál
-        ssc.configureBlocking(false); //vypnout blokování
-        selector = Selector.open(); //otevřít selektor
-        ssc.register(selector, SelectionKey.OP_ACCEPT); //přidat kanál do selektoru
-        ssc.socket().bind(new InetSocketAddress("localhost", PORT)); //připojit serverový soket
-        decoder = Charset.forName("UTF-8").newDecoder(); //vytvořit dekóder pro ASCII
-        buffer = ByteBuffer.allocateDirect(512); //alokovat bajtový buffer
+        ssc = ServerSocketChannel.open();
+        ssc.configureBlocking(false);
+        selector = Selector.open();
+        ssc.register(selector, SelectionKey.OP_ACCEPT);
+        ssc.socket().bind(new InetSocketAddress("localhost", PORT));
+        decoder = Charset.forName("UTF-8").newDecoder();
+        writeBuffer = ByteBuffer.allocateDirect(256);
+        readBuffer = ByteBuffer.allocateDirect(256);
+        clients = new HashMap<>();
     }
 
     /**
@@ -71,10 +74,10 @@ public class Server extends Thread {
      * @param msg
      */
     private void prepWriteBuffer(String msg) {
-        buffer.clear();
-        buffer.put(msg.getBytes());
-        buffer.putChar('\n');
-        buffer.flip();
+        writeBuffer.clear();
+        writeBuffer.put(msg.getBytes());
+        writeBuffer.putChar('\n');
+        writeBuffer.flip();
     }
 
     private void channelWrite(SocketChannel channel, ByteBuffer writeBuffer) throws IOException {
@@ -88,18 +91,30 @@ public class Server extends Thread {
 
     private void sendMessage(SocketChannel channel, String mesg) throws IOException {
         prepWriteBuffer(mesg);
-        channelWrite(channel, buffer);
+        channelWrite(channel, writeBuffer);
     }
 
     private void broadcastMessage(String msg, SocketChannel from) throws IOException {
-        ByteBuffer msgBuf = ByteBuffer.wrap(msg.getBytes());
+        prepWriteBuffer(msg);
         for (SelectionKey key : selector.keys()) {
             if (key.isValid() && key.channel() instanceof SocketChannel) {
                 SocketChannel sch = (SocketChannel) key.channel();
                 if (from == null || sch != from) {
-                    channelWrite(sch, msgBuf);
+                    channelWrite(sch, writeBuffer);
                 }
             }
+        }
+    }
+
+    private void acceptNewConnections() {
+        try {
+            SocketChannel clientChannel;
+            while ((clientChannel = ssc.accept()) != null) {//non-blocking
+                registerNewClient(clientChannel);
+                sendMessage(clientChannel, "\n\nWelcome , there are " + clients.size() + " users online.\n");
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.WARNING, "Cannot accept", ex);
         }
     }
 
@@ -108,43 +123,52 @@ public class Server extends Thread {
      * @throws IOException
      */
     private void registerNewClient(SocketChannel client) throws IOException {
-        if (client != null) { //pokud se někdo opravdu připojil
-            Logger.getLogger(ServerWorker.class.getName()).log(Level.INFO, "New client on {0}", client.getRemoteAddress());
-            client.configureBlocking(false); //vypnout blokování
-            client.register(selector, SelectionKey.OP_READ, new StringBuffer()); //a přidat do selektoru
-            broadcastMessage("New client " + client.getRemoteAddress() + " connected\n",null);
-        }
+        Logger.getLogger(ServerWorker.class.getName()).log(Level.INFO, "New client on {0}", client.getRemoteAddress());
+        client.configureBlocking(false);
+        client.register(selector, SelectionKey.OP_READ, new StringBuffer());
+        clients.put(client, client.getRemoteAddress().toString());
+        broadcastMessage("New user " + clients.get(client) + " connected\n", client);
     }
 
-    private String readInput(SelectionKey key) throws CharacterCodingException {
-        StringBuffer sb = (StringBuffer) key.attachment();
-        buffer.flip();
-        sb.append(decoder.decode(buffer).toString());
-        buffer.clear();
-        if (sb.indexOf("\r\n\r\n") != -1) {
-            return sb.toString().trim();
-        }
-        return "bad input";
-    }
-
-    private void processInput(Channel chan, SelectionKey key) throws IOException {
-        SocketChannel client = (SocketChannel) chan;
-        int read = -1;
+    private void readIncomingMessages() {
         try {
-            read = client.read(buffer);
-        } catch (IOException ex) {
-            /*klient může poslat data na server a umřít dřív než server stihne request zpracovat*/
-        }
-        if (read == -1) { //end of connection
-            Logger.getLogger(ServerWorker.class.getName()).log(Level.INFO, "Lost contact with client {0}", client.getRemoteAddress());
-            key.cancel();
-            client.close();
-            return;
-        }
-        String message = readInput(key);
-        System.out.println(message.trim());
+            selector.selectNow();
+            Set<SelectionKey> keys = selector.selectedKeys();
+            for (SelectionKey key : keys) {
+                SocketChannel chan = (SocketChannel) key.channel();
+                long read = -1;
+                try {
+                    readBuffer.clear();
+                    read = chan.read(readBuffer);
+                } catch (IOException ex) {
+                    /*klient může poslat data na server a umřít dřív než server stihne request zpracovat*/
+                }
+                if (read == -1) { //end of connection
+                    Logger.getLogger(ServerWorker.class.getName()).log(Level.INFO, "Lost contact with client {0}", chan.getRemoteAddress());
+                    broadcastMessage("User " + chan + " leaved\n", null);
+                    clients.remove(chan);
+                    key.cancel();
+                    chan.close();
+                    return;
+                }
+                StringBuffer sb = (StringBuffer) key.attachment();
+                readBuffer.flip();
+                String str = decoder.decode(readBuffer).toString();
+                readBuffer.clear();
+                sb.append(str);
+                // check for a full line
+                String line = sb.toString();
+                if ((line.contains("\n")) || (line.contains("\r"))) {
+                    line = line.trim();
+                    System.out.println("broadcasting: " + line);
+                    broadcastMessage(clients.get(chan) + ": " + line, chan);
+                    sb.delete(0, sb.length());
 
-        sendMessage(client, RESPONSE);
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
     }
 
@@ -157,20 +181,14 @@ public class Server extends Thread {
             return;
         }
         (new InputThread(this)).start();
-        while (ssc.isOpen()) {
+        while (ssc.isOpen() || !Thread.interrupted()) {
+            acceptNewConnections();
+            readIncomingMessages();
             try {
-                selector.select(); //block until event
-                Set<SelectionKey> keys = selector.selectedKeys();
-                for (SelectionKey key : keys) {
-                    Channel chan = key.channel(); //získat kanál
-                    if (chan == ssc) { //new client
-                        registerNewClient(ssc.accept());
-                    } else { //known client
-                        processInput(chan, key);
-                    }
-                }
-            } catch (IOException | ClosedSelectorException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.WARNING, "Server encounterd an exception or shutdown.");
+                Thread.sleep(100);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.WARNING, "Server loop interupted", ex);
+                
             }
         }
         try {
