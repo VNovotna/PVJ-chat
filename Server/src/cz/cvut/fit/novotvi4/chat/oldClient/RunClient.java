@@ -1,4 +1,4 @@
-package cz.cvut.fit.novotvi4.chat.client;
+package cz.cvut.fit.novotvi4.chat.oldClient;
 
 import java.io.IOException;
 import java.util.logging.Level;

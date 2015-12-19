@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.cvut.fit.novotvi4.chat.client;
+package cz.cvut.fit.novotvi4.chat.oldClient;
 
 /**
  *
