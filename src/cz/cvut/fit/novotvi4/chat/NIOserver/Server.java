@@ -1,5 +1,6 @@
 package cz.cvut.fit.novotvi4.chat.NIOserver;
 
+import cz.cvut.fit.novotvi4.chat.Settings;
 import cz.cvut.fit.novotvi4.chat.server.ServerWorker;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,18 +25,6 @@ import java.util.logging.Logger;
  */
 public class Server extends Thread {
 
-    public static final int PORT = 1128;
-
-    /**
-     * Univerzální odpoveď
-     */
-    public static final String RESPONSE = "HTTP/1.0 200 OK\r\n"
-            + "Connection: closed\r\n"
-            + "Content-Type: text/plain\r\n"
-            + "Content-length: 20\r\n"
-            + "\r\n"
-            + "Simple HTTP server.\n";
-
     private ServerSocketChannel ssc;
     private Selector selector;
     private CharsetDecoder decoder;
@@ -51,7 +40,7 @@ public class Server extends Thread {
         ssc.configureBlocking(false);
         selector = Selector.open();
         ssc.register(selector, SelectionKey.OP_ACCEPT);
-        ssc.socket().bind(new InetSocketAddress("localhost", PORT));
+        ssc.socket().bind(new InetSocketAddress("localhost", Settings.port));
         decoder = Charset.forName("UTF-8").newDecoder();
         writeBuffer = ByteBuffer.allocateDirect(256);
         readBuffer = ByteBuffer.allocateDirect(256);

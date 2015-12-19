@@ -8,11 +8,8 @@ import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JEditorPane;
-import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
-import javax.swing.plaf.synth.Region;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
