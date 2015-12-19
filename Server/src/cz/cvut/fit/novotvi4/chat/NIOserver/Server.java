@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package cz.cvut.fit.novotvi4.chat.NIOserver;
 
 import cz.cvut.fit.novotvi4.chat.server.ServerWorker;
@@ -11,16 +6,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
-import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
-import java.nio.charset.MalformedInputException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -142,13 +133,20 @@ public class Server extends Thread {
                     read = chan.read(readBuffer);
                 } catch (IOException ex) {
                     /*klient může poslat data na server a umřít dřív než server stihne request zpracovat*/
-                }
-                if (read == -1) { //end of connection
-                    Logger.getLogger(ServerWorker.class.getName()).log(Level.INFO, "Lost contact with client {0}", chan.getRemoteAddress());
-                    broadcastMessage("User " + chan + " leaved\n", null);
+                    Logger.getLogger(Server.class.getName()).log(Level.INFO, "client died really fast");
+                    String name = clients.get(chan);
                     clients.remove(chan);
                     key.cancel();
                     chan.close();
+                    broadcastMessage("User " + name + " leaved\n", null);
+                    return;
+                }
+                if (read == -1) { //end of connection
+                    Logger.getLogger(ServerWorker.class.getName()).log(Level.INFO, "Lost contact with client {0}", chan.getRemoteAddress());
+                    clients.remove(chan);
+                    key.cancel();
+                    chan.close();
+                    broadcastMessage("User " + chan + " leaved\n", null);
                     return;
                 }
                 StringBuffer sb = (StringBuffer) key.attachment();
@@ -161,13 +159,13 @@ public class Server extends Thread {
                 if ((line.contains("\n")) || (line.contains("\r"))) {
                     line = line.trim();
                     System.out.println("broadcasting: " + line);
-                    broadcastMessage(clients.get(chan) + ": " + line, chan);
+                    broadcastMessage(clients.get(chan) + ": " + line, null);
                     sb.delete(0, sb.length());
 
                 }
             }
         } catch (IOException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, "Something happend", ex);
         }
 
     }
@@ -188,7 +186,7 @@ public class Server extends Thread {
                 Thread.sleep(100);
             } catch (InterruptedException ex) {
                 Logger.getLogger(Server.class.getName()).log(Level.WARNING, "Server loop interupted", ex);
-                
+
             }
         }
         try {
