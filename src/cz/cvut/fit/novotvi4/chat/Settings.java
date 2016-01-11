@@ -27,8 +27,12 @@ public abstract class Settings {
         } catch (IOException ex) {
             Logger.getLogger(Settings.class.getName()).log(Level.WARNING, "No default properties file, loading harcoded one.", ex);
             defaultProps = loadHarcodedProperties();
+            try {
+                writeCustomProperties(defaultProps, "defaultProperties");
+            } catch (IOException ex1) {
+                Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, "Can not save default properties - no permission to write on disk", ex1);
+            }
         }
-        System.out.println("set props");
         props = new Properties(defaultProps);
 
         try (FileInputStream in = new FileInputStream("properties")) {
@@ -58,8 +62,19 @@ public abstract class Settings {
      * @throws java.io.IOException
      */
     public void writeProperties() throws FileNotFoundException, IOException {
-        try (FileOutputStream out = new FileOutputStream("properties")) {
-            props.store(out, "---No Comment---");
+        writeCustomProperties(props,"properties");
+    }
+
+    /**
+     * store settings on disk
+     *
+     * @throws java.io.FileNotFoundException
+     * @throws java.io.IOException
+     */
+    private void writeCustomProperties(Properties prop, String filename) throws FileNotFoundException, IOException {
+        try (FileOutputStream out = new FileOutputStream(filename)) {
+            prop.store(out, "--- Chat settings ---");
+
         }
     }
 
