@@ -6,5 +6,4 @@ package cz.cvut.fit.novotvi4.chat.client;
  */
 public class Settings extends cz.cvut.fit.novotvi4.chat.Settings {
 
-    public static final String address = "localhost";
 }

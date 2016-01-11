@@ -23,9 +23,11 @@ public class Client implements Runnable {
     private JEditorPane chatWindow;
     private BufferedReader input;
     private PrintWriter output;
+    private Settings settings;
 
-    public Client(String address, int port, JEditorPane chatWindow) throws IOException {
-        this.socket = new Socket(address, port);
+    public Client(JEditorPane chatWindow) throws IOException {
+        settings = new Settings();
+        this.socket = new Socket(settings.getAddress(), settings.getPort());
         this.chatWindow = chatWindow;
 
         input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -92,6 +94,7 @@ public class Client implements Runnable {
     }
 
     public void stop() throws IOException {
+        settings.writeProperties();
         socket.close();
     }
 }

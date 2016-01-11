@@ -47,7 +47,7 @@ public class ClientUI {
             Logger.getLogger(ClientUI.class.getName()).log(Level.SEVERE, null, ex);
         }
         try {
-            clientInstance = new Client(Settings.address, Settings.port, null);
+            clientInstance = new Client(null);
             clientThread = new Thread(clientInstance);
             createFrame();
             clientThread.start();

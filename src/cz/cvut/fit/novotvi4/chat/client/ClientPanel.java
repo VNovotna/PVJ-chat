@@ -26,12 +26,12 @@ public class ClientPanel extends JPanel {
         JTabbedPane tabbedPane = new JTabbedPane();
 
         JComponent chatPanel = ChatPanelFactory.getComponent(clientInstance);
-        tabbedPane.addTab("Chat", null, chatPanel, "Does nothing");
+        tabbedPane.addTab("Chat", null, chatPanel, "Chat window");
         tabbedPane.setMnemonicAt(0, KeyEvent.VK_F1);
         tabbedPane.setSelectedIndex(0);
 
         JComponent settingsPanel = makeSettingsPanel("Panel #2");
-        tabbedPane.addTab("Settings", null, settingsPanel, "Does twice as much nothing");
+        tabbedPane.addTab("Settings", null, settingsPanel, "Settings");
         tabbedPane.setMnemonicAt(1, KeyEvent.VK_F2);
 
         add(tabbedPane);

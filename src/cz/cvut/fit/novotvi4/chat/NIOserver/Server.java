@@ -1,6 +1,5 @@
 package cz.cvut.fit.novotvi4.chat.NIOserver;
 
-import cz.cvut.fit.novotvi4.chat.Settings;
 import cz.cvut.fit.novotvi4.chat.server.ServerWorker;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,16 +30,18 @@ public class Server extends Thread {
     private ByteBuffer writeBuffer;
     private ByteBuffer readBuffer;
     private Map<SocketChannel, String> clients;
+    private Settings settings;
 
     /**
      * @throws IOException
      */
     public void init() throws IOException {
+        settings = new Settings();
         ssc = ServerSocketChannel.open();
         ssc.configureBlocking(false);
         selector = Selector.open();
         ssc.register(selector, SelectionKey.OP_ACCEPT);
-        ssc.socket().bind(new InetSocketAddress("localhost", Settings.port));
+        ssc.socket().bind(new InetSocketAddress("localhost", settings.getPort()));
         decoder = Charset.forName("UTF-8").newDecoder();
         writeBuffer = ByteBuffer.allocateDirect(256);
         readBuffer = ByteBuffer.allocateDirect(256);
@@ -91,7 +92,7 @@ public class Server extends Thread {
             SocketChannel clientChannel;
             while ((clientChannel = ssc.accept()) != null) {//non-blocking
                 registerNewClient(clientChannel);
-                sendMessage(clientChannel, "\n\nWelcome , there are " + clients.size() + " users online.\n");
+                sendMessage(clientChannel, "\n\nWelcome , there are " + clients.size() + " users online (including you). \n");
             }
         } catch (IOException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.WARNING, "Cannot accept", ex);
