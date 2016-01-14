@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,7 +15,7 @@ import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
 /**
- *
+ * Listening thread and message sender 
  * @author viky
  */
 public class Client implements Runnable {
@@ -26,22 +27,33 @@ public class Client implements Runnable {
     private Settings settings;
 
     public Client(JEditorPane chatWindow) throws IOException {
-        settings = new Settings();
-        this.socket = new Socket(settings.getAddress(), settings.getPort());
         this.chatWindow = chatWindow;
-
-        input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        output = new PrintWriter(socket.getOutputStream(), true);
+        init();
     }
 
+    /**
+     * @param text 
+     */
     public void sendMessage(String text) {
         output.println(text);
+    }
+
+    /**
+     * send login of user to the server, so the user won't by identified by port
+     * @param login 
+     */
+    public void sendLogin(String login) {
+        output.println("/login=" + login);
     }
 
     public void setChatWindow(JEditorPane jp) {
         chatWindow = jp;
     }
 
+    /**
+     * write some HTML to text area
+     * @param incomingStr 
+     */
     private void processIncomingMessage(String incomingStr) {
         HTMLEditorKit kit = new HTMLEditorKit();
         HTMLDocument doc = (HTMLDocument) chatWindow.getDocument();
@@ -93,8 +105,32 @@ public class Client implements Runnable {
         Logger.getLogger(Client.class.getName()).log(Level.INFO, "Stoped client thread");
     }
 
+    /**
+     * closes settings and socket - thus the tread die 
+     * @throws IOException 
+     */
     public void stop() throws IOException {
         settings.writeProperties();
         socket.close();
+    }
+
+    private void init() throws IOException {
+        settings = new Settings();
+        try {
+            socket = new Socket(settings.getAddress(), settings.getPort());
+
+            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            output = new PrintWriter(socket.getOutputStream(), true);
+        } catch (ConnectException ex) {
+            throw ex;
+        }
+    }
+
+    public void reload() throws IOException {
+        init();
+    }
+
+    public Settings getSettings() {
+        return settings;
     }
 }

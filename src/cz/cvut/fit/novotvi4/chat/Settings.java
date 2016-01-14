@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  */
 public abstract class Settings {
 
-    private Properties props;
+    protected Properties props;
 
     public Settings() {
         loadSettings();
@@ -55,6 +55,10 @@ public abstract class Settings {
         return props.getProperty("address");
     }
 
+    public void setAddress(String text) {
+        props.setProperty("address", text);
+    }
+
     /**
      * store settings on disk
      *
@@ -62,7 +66,7 @@ public abstract class Settings {
      * @throws java.io.IOException
      */
     public void writeProperties() throws FileNotFoundException, IOException {
-        writeCustomProperties(props,"properties");
+        writeCustomProperties(props, "properties");
     }
 
     /**

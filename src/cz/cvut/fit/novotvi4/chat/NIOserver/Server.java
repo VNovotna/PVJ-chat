@@ -41,7 +41,7 @@ public class Server extends Thread {
         ssc.configureBlocking(false);
         selector = Selector.open();
         ssc.register(selector, SelectionKey.OP_ACCEPT);
-        ssc.socket().bind(new InetSocketAddress("localhost", settings.getPort()));
+        ssc.socket().bind(new InetSocketAddress("localhost", 1129));//settings.getPort()));
         decoder = Charset.forName("UTF-8").newDecoder();
         writeBuffer = ByteBuffer.allocateDirect(256);
         readBuffer = ByteBuffer.allocateDirect(256);
@@ -75,6 +75,12 @@ public class Server extends Thread {
         channelWrite(channel, writeBuffer);
     }
 
+    /**
+     * 
+     * @param msg
+     * @param from
+     * @throws IOException 
+     */
     private void broadcastMessage(String msg, SocketChannel from) throws IOException {
         prepWriteBuffer(msg);
         for (SelectionKey key : selector.keys()) {
@@ -133,10 +139,11 @@ public class Server extends Thread {
                 }
                 if (read == -1) { //end of connection
                     Logger.getLogger(ServerWorker.class.getName()).log(Level.INFO, "Lost contact with client {0}", chan.getRemoteAddress());
+                    String name = clients.get(chan);
                     clients.remove(chan);
                     key.cancel();
                     chan.close();
-                    broadcastMessage("User " + chan + " leaved\n", null);
+                    broadcastMessage("User " + name + " leaved\n", null);
                     return;
                 }
                 StringBuffer sb = (StringBuffer) key.attachment();

@@ -18,7 +18,7 @@ public class ClientUI {
     private static Thread clientThread;
 
     private static void createFrame() {
-        JFrame f = new ClientFrame(new ClientPanel("Chat", clientInstance));
+        JFrame f = new ClientFrame(new ClientPanel("Chat", clientInstance,clientThread));
         f.pack();
         SwingUtilities.invokeLater(() -> {
             f.setVisible(true);
@@ -30,7 +30,7 @@ public class ClientUI {
      */
     public static void main(String[] args) {
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
+        /*Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
                 try {
@@ -39,7 +39,7 @@ public class ClientUI {
                     Logger.getLogger(ClientUI.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-        });
+        });*/
 
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -52,8 +52,9 @@ public class ClientUI {
             createFrame();
             clientThread.start();
         } catch (IOException ex) {
-            Logger.getLogger(ClientUI.class.getName()).log(Level.SEVERE, null, ex);
-            System.exit(1);
+            Logger.getLogger(ClientUI.class.getName()).log(Level.SEVERE, "IO", ex);
+            //System.exit(1);
+            createFrame();
         }
     }
 }
